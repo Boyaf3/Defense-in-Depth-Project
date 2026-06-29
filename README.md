@@ -80,9 +80,6 @@ Login with credentials (default: admin / eve)
 3. Upload the Defense-in-Depth topology file (`.unl`, `.json`, or `.yaml` format)
 4. Wait for the upload to complete
 
-**Alternative Path:**
-- Direct folder path: `/opt/unetlab/addons/labs/`
-
 ### Step 3: Load the Topology
 
 1. Go to **"Open Lab"** or **"Topologies"** section
@@ -150,32 +147,6 @@ Switches
     ├─→ Internal Network (Users/Resources)
     └─→ Management Network (Admin access)
 ```
-
-## Backing Up & Sharing
-
-### Export Topology
-
-1. Right-click the lab in EVE-NG
-2. Select "Export Lab" or "Download"
-3. Save the file locally
-
-### Share with Team
-
-- Save to Git repository
-- Use file sharing service
-- Share exported `.unl` file
-- Team members follow same import steps
-
-## Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| File not found in EVE-NG | Check file is in topologies folder |
-| Cannot open topology | Verify file format (.unl/.json/.yaml) |
-| Devices won't start | Check device images are installed in EVE-NG |
-| No console access | Verify EVE-NG permissions and connectivity |
-| Lab shows errors | Re-download or re-export topology file |
-
 ## Best Practices
 
 ### Security
@@ -227,6 +198,3 @@ Switches
 
 Boyaf3
 
-## License
-
-[Add your license information here]
