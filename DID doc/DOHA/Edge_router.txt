@@ -1,0 +1,95 @@
+enable
+conf t
+hostname DOHA-RTR
+no ip domain-lookup
+ip cef
+
+crypto isakmp policy 10
+ encr aes
+ hash sha
+ authentication pre-share
+ group 2
+ lifetime 86400
+
+crypto isakmp key DMVPN-KEY address 0.0.0.0 0.0.0.0
+
+crypto ipsec transform-set TS-DMVPN esp-aes esp-sha-hmac
+ mode transport
+
+crypto ipsec profile DMVPN-PROFILE
+ set transform-set TS-DMVPN
+! ===== UNDERLAY WAN =====
+interface s1/1
+ description Doha <-> Manama
+ ip address 201.10.0.2 255.255.255.252
+ no shutdown
+
+interface s1/2
+ description Doha <-> Riyadh
+ ip address 201.10.0.10 255.255.255.252
+ no shutdown
+
+! LAN (or VLAN 50 gateway)
+interface e0/2
+ no shutdown
+
+ int e0/2.50
+  enc dot 50
+  ip add 10.40.50.1 255.255.255.0
+  ip ospf 10 area 0
+  no shut
+  exit
+
+! Loopback for DMVPN
+interface loopback0
+ ip address 10.255.0.2 255.255.255.255
+ no shutdown
+
+! ===== DMVPN CLOUD 1 – SPOKE to Manama =====
+interface Tunnel0
+ description DMVPN PRIMARY (to Manama HUB)
+ ip address 172.31.0.2 255.255.255.0
+ ip mtu 1400
+ ip tcp adjust-mss 1360
+ tunnel source loopback0                  ! 10.255.0.2
+ tunnel mode gre multipoint
+ tunnel key 100
+ ip nhrp network-id 100
+ ip nhrp authentication DMVPN
+ ip nhrp nhs 172.31.0.1
+ ip nhrp map 172.31.0.1 10.255.0.1
+ ip nhrp map multicast 10.255.0.1
+ ip nhrp shortcut
+ tunnel protection ipsec profile DMVPN-PROFILE
+ no shutdown
+ ip ospf 10 area 0
+ ip ospf network point-to-multipoint
+ ip ospf cost 10
+
+! ===== DMVPN CLOUD 2 –HUB =====
+interface Tunnel1
+ description DMVPN HUB  (Doha)
+ ip address 172.31.1.1 255.255.255.0
+ ip mtu 1400
+ ip tcp adjust-mss 1360
+ tunnel source loopback0                  ! 10.255.0.2
+ tunnel mode gre multipoint
+ tunnel key 200
+ ip nhrp network-id 200
+ ip nhrp authentication DMVPN
+ ip nhrp map multicast dynamic
+ ip nhrp redirect
+ tunnel protection ipsec profile DMVPN-PROFILE
+ no shutdown
+ ip ospf 10 area 0
+ ip ospf network broadcast
+ ip ospf cost 100
+
+! ===== OSPF =====
+router ospf 10
+ router-id 10.255.0.2
+ network 201.10.0.0 0.0.0.3 area 0       !Doha-Manama
+ network 201.10.0.8 0.0.0.3 area 0       !Doha-Riyadh
+ network 10.255.0.2 0.0.0.0 area 0
+end
+wr mem

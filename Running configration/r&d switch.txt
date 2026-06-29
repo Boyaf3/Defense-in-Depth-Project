@@ -1,0 +1,143 @@
+
+Building configuration...
+
+Current configuration : 2472 bytes
+!
+! Last configuration change at 19:24:05 UTC Thu Dec 25 2025
+!
+version 15.2
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+service compress-config
+!
+hostname R&D_Switch
+!
+boot-start-marker
+boot-end-marker
+!
+!
+enable secret 5 $1$upYl$EcXSEf/JOaW5h85UP1a631
+!
+username admin privilege 15 secret 9 $9$g1zE4s1YfNPnFN$hJKDy1IIF1ffzrSGzpyTUYu4bNMdi4iMa66qm6xI60c
+username intern view intern secret 5 $1$reBX$P87j/PdltQ/Y8cNpxMAJT0
+username auditor privilege 5 view auditor secret 5 $1$.Wd2$wrl9EMhul/vJviZ0By8Nk.
+aaa new-model
+!
+!
+aaa authentication login default group radius local
+aaa authorization exec default group radius local
+aaa accounting exec default start-stop group radius
+!
+!
+!
+!
+!
+!
+aaa session-id common
+!
+!
+!
+!
+!
+!
+!
+!
+ip domain-name gulftech.local
+ip cef
+no ipv6 cef
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree portfast edge default
+spanning-tree extend system-id
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ switchport access vlan 40
+ switchport mode access
+ switchport port-security maximum 30
+ switchport port-security mac-address sticky
+ --More--
+*Dec 25 20:40:02.205: %RADIUS-4-RADIUS_DEAD: RADIUS server 10.10.50.20:1812,1813 is not responding.
+*Dec 25 20:40:02.205: %RADIUS-4-RADIUS_ALIVE: RADIUS server 10.10.50.20:1812,1813 is being marked alive.
+ switchport port-security mac-address sticky 0050.7966.680f
+ switchport port-security mac-address sticky 2eb4.6b48.7599
+ switchport port-security
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+ ip verify source port-security
+!
+interface Ethernet0/1
+ switchport trunk allowed vlan 10,20,30,40,50
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ ip arp inspection trust
+ spanning-tree portfast disable
+!
+interface Ethernet0/2
+!
+interface Ethernet0/3
+!
+interface Vlan50
+ ip address 10.10.50.3 255.255.255.0
+!
+ip default-gateway 10.10.50.1
+ip forward-protocol nd
+!
+ip http server
+!
+ip ssh time-out 60
+ip ssh version 2
+ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+!
+!
+!
+!
+!
+!
+radius server AAA-SERVER
+ address ipv4 10.10.50.20 auth-port 1812 acct-port 1813
+ key 7 097B47072B04131B1E1F
+!
+!
+control-plane
+!
+parser view auditor
+ secret 5 $1$lnL/$sjxOwunwNTIN3/6w.Nppo/
+ commands exec include show ip route
+ commands exec include show ip
+ commands exec include show access-lists
+ commands exec include show logging
+ commands exec include show
+!
+parser view intern
+ secret 5 $1$N0cy$xCPmlo5A3Z5vTYg3yjXQV0
+ commands exec include show
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ exec-timeout 5 0
+ transport input ssh
+!
+!
+!
+end

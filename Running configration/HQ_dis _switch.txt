@@ -1,0 +1,150 @@
+Building configuration...
+
+Current configuration : 2744 bytes
+!
+! Last configuration change at 19:24:20 UTC Thu Dec 25 2025
+!
+version 15.2
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+service compress-config
+!
+hostname Dis_Switch
+!
+boot-start-marker
+boot-end-marker
+!
+!
+enable secret 5 $1$s0kh$kM.RsgrF6s7amNZ5RSjCg/
+!
+username admin privilege 15 secret 9 $9$y3Jxxi3d6Yjiy7$6zcfKdtbJYzV4zyUVjya/aJNAMPH1.bjQXmTwYuBf0Q
+username intern view intern secret 5 $1$hQqd$/nlhmp5auZkphUSnG4SNU0
+username auditor privilege 5 view auditor secret 5 $1$a9xv$o1.7kxyp2ulmwRVS/wfx2.
+aaa new-model
+!
+!
+aaa authentication login default group radius local
+aaa authorization exec default group radius local
+aaa accounting exec default start-stop group radius
+!
+!
+!
+!
+!
+!
+aaa session-id common
+!
+!
+!
+!
+!
+ip arp inspection vlan 10,20,30,40,50
+!
+!
+!
+ip dhcp snooping vlan 10,20,30,40,50
+ip dhcp snooping
+ip domain-name gulftech.local
+ip cef
+no ipv6 cef
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ switchport trunk allowed vlan 10,20,30,40,50
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ ip arp inspection trust
+ spanning-tree portfast disable
+ ip dhcp snooping trust
+!
+interface Ethernet0/1
+ switchport trunk allowed vlan 10,20,30,40,50
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ ip arp inspection trust
+ spanning-tree portfast disable
+ ip dhcp snooping trust
+!
+interface Ethernet0/2
+ switchport trunk allowed vlan 10,20,30,40,50
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ ip arp inspection trust
+ spanning-tree portfast disable
+ ip dhcp snooping trust
+!
+interface Ethernet0/3
+ switchport trunk allowed vlan 10,20,30,40,50
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ ip arp inspection trust
+ spanning-tree portfast disable
+ ip dhcp snooping trust
+!
+interface Vlan50
+ ip address 10.10.50.2 255.255.255.0
+!
+ip default-gateway 10.10.50.1
+ip forward-protocol nd
+!
+ip http server
+!
+ip ssh time-out 60
+ip ssh version 2
+ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+!
+!
+!
+!
+!
+!
+radius server AAA-SERVER
+ address ipv4 10.10.50.20 auth-port 1812 acct-port 1813
+ key 7 15250202362B2F2D3D20
+!
+!
+control-plane
+!
+parser view auditor
+ secret 5 $1$gSMk$YPneKydlFXiUgmAeSHpKG.
+ commands exec include show ip route
+ commands exec include show ip
+ commands exec include show access-lists
+ commands exec include show logging
+ commands exec include show
+!
+parser view intern
+ secret 5 $1$KWci$W1VdVJkzm2ky4fv35j2N7.
+ commands exec include show
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ exec-timeout 5 0
+ transport input ssh
+!
+!
+!
+end

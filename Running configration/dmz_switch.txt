@@ -1,0 +1,33 @@
+ena 
+conf t
+
+Hostname DMZ_ACC
+vlan 100 
+name DMZ
+exit
+
+int range e0/0-3
+sw mo acc
+sw acc vlan 100
+no shut 
+
+int e1/0
+sw mo acc
+sw acc vlan 100
+no shut 
+
+int e1/1
+sw mo acc
+sw acc vlan 100
+no shut
+
+int e0/2
+sw mo acc
+sw acc vlan 100
+no shut
+
+int vlan 100
+ip add 10.10.100.50 255.255.255.0
+no shut
+
+do wr mem

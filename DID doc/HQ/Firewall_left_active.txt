@@ -1,0 +1,233 @@
+changeto system
+conf t
+hostname ASA1-SYSTEM
+wr me 
+mode multiple 
+! -------- Failover / HA core settings --------
+no failover
+failover lan unit primary
+failover lan interface FO Ethernet3
+failover interface ip FO 10.10.2.1 255.255.255.252 standby 10.10.2.2
+
+failover group 1
+ primary
+ preempt
+
+failover group 2
+ secondary
+ preempt
+
+interface Ethernet0
+ no shutdown
+interface Ethernet1
+ no shutdown
+interface Ethernet2
+ no shutdown
+interface Ethernet3
+ no shutdown
+interface Ethernet4
+no shutdown
+exit
+
+admin-context CTX-MAIN
+
+context CTX-MAIN
+  join-failover-group 1
+  allocate-interface Ethernet0
+  allocate-interface Ethernet1
+  allocate-interface Ethernet2
+  config-url disk0:/CTX-MAIN.cfg
+
+context CTX-EXTRA
+  join-failover-group 2
+   allocate-interface Ethernet0
+  allocate-interface Ethernet1
+  allocate-interface Ethernet2
+  config-url disk0:/CTX-EXTRA.cfg
+
+failover
+end
+wr mem
+
+
+///////////////////////////////////////////////////
+changeto context CTX-MAIN
+conf t
+hostname ASA-CTX-MAIN
+
+! ======== Interfaces / zones ========
+
+! OUTSIDE – to MANAMA router (209.10.0.0/29)
+interface Ethernet1
+ nameif outside
+ security-level 0
+ ip address 209.10.0.2 255.255.255.248 standby 209.10.0.3
+ no shutdown
+
+! INSIDE – to IPS (10.10.1.0/29)
+interface Ethernet0
+ nameif inside
+ security-level 100
+ ip address 10.10.1.2 255.255.255.248 standby 10.10.1.3
+ no shutdown
+
+! DMZ – VLAN 100 (10.10.100.0/24)
+interface Ethernet2
+ nameif dmz
+ security-level 50
+ ip address 10.10.100.1 255.255.255.0 standby 10.10.100.2
+ no shutdown
+
+! ======== Routing ========
+
+! Default route to MANAMA router
+route outside 0.0.0.0 0.0.0.0 209.10.0.1
+
+! All Manama VLANs 10.10.x.x reachable via IPS 10.10.1.1
+
+route inside 10.10.10.0 255.255.255.0 10.10.1.1
+route inside 10.10.20.0 255.255.255.0 10.10.1.1
+route inside 10.10.30.0 255.255.255.0 10.10.1.1
+route inside 10.10.40.0 255.255.255.0 10.10.1.1
+route inside 10.10.50.0 255.255.255.0 10.10.1.1
+policy-map global_policy
+ class inspection_default
+inspect icmp
+
+! ======== NAT (PAT + Static) ========
+
+! PAT for inside networks (10.10.10/20/30/40/50)
+object network INSIDE-NET
+ subnet 10.10.0.0 255.255.0.0
+ nat (inside,outside) dynamic interface
+
+! Static NAT for DMZ web server
+object network DMZ-WEB
+ host 10.10.100.10
+ nat (dmz,outside) static 209.10.0.4
+
+! Static NAT for DMZ email server
+object network DMZ-MAIL
+ host 10.10.100.20
+ nat (dmz,outside) static 209.10.0.5
+
+! ======== Network object-groups ========
+
+object-group network DMZ-SERVERS
+ network-object host 10.10.100.10
+ network-object host 10.10.100.20
+
+object-group network MANAMA-INTERNAL-NETS
+ network-object 10.10.10.0 255.255.255.0
+ network-object 10.10.20.0 255.255.255.0
+ network-object 10.10.30.0 255.255.255.0
+ network-object 10.10.40.0 255.255.255.0
+ network-object 10.10.50.0 255.255.255.0
+
+! ======== Service objects + service object-group ========
+
+object-group service DMZ-SERVICES
+ service-object tcp eq 80
+ service-object tcp eq 443
+ service-object tcp eq 25
+ service-object icmp
+
+
+
+! ======== Outside ACL (using object-groups) ========
+
+! Allow only HTTP/HTTPS/SMTP to the public DMZ IPs
+access-list OUTSIDE-IN extended permit object-group DMZ-SERVICES any object-group DMZ-SERVERS
+
+! Everything else from outside is denied by default.
+
+access-group OUTSIDE-IN in interface outside
+
+! ======== Management from Management VLAN (10.10.50.0/24) ========
+
+http server enable
+http 10.10.50.0 255.255.255.0 inside
+
+ssh 10.10.50.0 255.255.255.0 inside
+username admin password cisco123 privilege 15
+aaa authentication ssh console LOCAL
+
+end
+write memory
+//////////////////////////////////////
+
+changeto context CTX-EXTRA
+conf t
+hostname CTX-EXTRA
+
+! =========================
+! Interfaces
+! =========================
+interface Ethernet1
+ nameif outside
+ security-level 0
+ ip address 209.10.0.6 255.255.255.240 standby 209.10.0.7
+ no shutdown
+
+interface Ethernet0
+ nameif inside
+ security-level 100
+ ip address 10.10.1.4 255.255.255.248 standby 10.10.1.5
+ no shutdown
+
+interface Ethernet2
+ nameif dmz
+ security-level 50
+ ip address 10.10.100.3 255.255.255.0 standby 10.10.100.4
+ no shutdown
+
+! =========================
+! NAT
+! =========================
+object network INSIDE-NET
+ subnet 10.10.0.0 255.255.0.0
+ nat (inside,outside) dynamic interface
+
+object network VPC_EXTRA
+ host 10.10.100.50
+ nat (dmz,outside) static 209.10.0.9
+
+! =========================
+! Outside ACL (router/branches -> vPC via NAT)
+! ASA checks ACL against REAL IP 10.10.100.50
+! =========================
+
+access-list OUTSIDE-IN-EXTRA extended permit icmp any host 10.10.100.50
+access-group OUTSIDE-IN-EXTRA in interface outside
+
+! =========================
+! Routing
+! =========================
+
+route inside 10.10.10.0 255.255.255.0 10.10.1.1
+route inside 10.10.50.0 255.255.255.0 10.10.1.1
+route outside 0.0.0.0 0.0.0.0 209.10.0.1
+
+! =========================
+! Global policy (ICMP inspection)
+! =========================
+class-map inspection_default
+ match default-inspection-traffic
+
+policy-map global_policy
+ class inspection_default
+  inspect icmp
+
+service-policy global_policy global
+
+! =========================
+! Management access
+! =========================
+http server enable
+http 10.10.50.0 255.255.255.0 inside
+ssh 10.10.50.0 255.255.255.0 inside
+username admin password cisco123 privilege 15
+aaa authentication ssh console LOCAL
+
+end
+write memory

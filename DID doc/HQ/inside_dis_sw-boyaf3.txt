@@ -1,0 +1,28 @@
+enable
+conf t
+hostname Dis_Switch
+vlan 10
+name HQ_HR
+vlan 20
+name HQ_Markting
+vlan 30
+name HQ_Sales
+vlan 40
+name HQ_R&D
+vlan 50
+name HQ_Managment
+
+! Management SVI
+inter vlan 50
+ip add 10.10.50.5 255.255.255.0
+no shut
+exit
+
+int e0/1
+SWITCHPORT TRUNK ENCAPSULATION DOT1Q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50
+
+! Default Gateway
+ip default-gateway 10.10.50.1
+exit

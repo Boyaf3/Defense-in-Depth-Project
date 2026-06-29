@@ -1,0 +1,74 @@
+ASA Version 9.1(5)16 <system>
+!
+hostname ASA2-System
+enable password 8Ry2YjIyt7RRXU24 encrypted
+no mac-address auto
+!
+interface Ethernet0
+!
+interface Ethernet1
+!
+interface Ethernet2
+!
+interface Ethernet3
+ description LAN Failover Interface
+!
+class default
+  limit-resource All 0
+  limit-resource Mac-addresses 65535
+  limit-resource ASDM 5
+  limit-resource SSH 5
+  limit-resource Telnet 5
+!
+
+ftp mode passive
+pager lines 24
+failover
+failover lan unit secondary
+failover lan interface FO Ethernet3
+failover interface ip FO 10.10.2.1 255.255.255.252 standby 10.10.2.2
+failover group 1
+  secondary
+  preempt
+failover group 2
+  preempt
+no asdm history enable
+arp timeout 14400
+no arp permit-nonconnected
+ssh stricthostkeycheck
+console timeout 0
+
+admin-context CTX-MAIN
+context CTX-MAIN
+  allocate-interface Ethernet0
+  allocate-interface Ethernet1
+  allocate-interface Ethernet2
+  config-url disk0:/CTX-MAIN.cfg
+  join-failover-group 1
+!
+
+context admin
+  config-url disk0:/admin.cfg
+!
+
+context CTX-EXTRA
+  config-url disk0:/CTX-EXTRA.cfg
+  join-failover-group 2
+!
+
+prompt hostname context
+no call-home reporting anonymous
+call-home
+ profile CiscoTAC-1
+  no active
+  destination address http https://tools.cisco.com/its/service/oddce/services/DDCEService
+  destination address email callhome@cisco.com
+  destination transport-method http
+  subscribe-to-alert-group diagnostic
+  subscribe-to-alert-group environment
+  subscribe-to-alert-group inventory periodic monthly
+  subscribe-to-alert-group configuration periodic monthly
+  subscribe-to-alert-group telemetry periodic daily
+crashinfo save disable
+Cryptochecksum:37b66cfecac3caa1bdf4ac78b66e3de5
+: end

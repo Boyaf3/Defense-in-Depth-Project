@@ -1,0 +1,42 @@
+ena 
+conf t
+
+Hostname DMZ_ACC
+vlan 100 
+name DMZ
+exit
+
+int range e0/0-3
+sw mo acc
+sw acc vlan 100
+no shut 
+
+int e1/0
+sw mo acc
+sw acc vlan 100
+no shut 
+
+int e1/1
+sw mo acc
+sw acc vlan 100
+no shut
+
+int e0/2
+sw mo acc
+sw acc vlan 100
+no shut
+! don't forgot for extra vpc for extra CTX
+int vlan 100
+ip add 10.10.100.254 255.255.255.0
+no shut
+
+do wr mem
+
+monitor session 1 source interface e0/0 both
+monitor session 1 source interface e0/1 both
+monitor session 1 source interface e1/0 both
+monitor session 1 source interface e1/1 both
+monitor session 1 source interface e0/2 both
+monitor session 1 destination interface e0/3
+end
+wr

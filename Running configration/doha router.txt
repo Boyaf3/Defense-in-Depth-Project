@@ -1,0 +1,205 @@
+
+Building configuration...
+
+Current configuration : 2827 bytes
+!
+! Last configuration change at 14:48:58 UTC Thu Dec 25 2025
+!
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname DOHA-RTR
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+bsd-client server url https://cloudsso.cisco.com/as/token.oauth2
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+cts logging verbose
+!
+!
+!
+redundancy
+!
+!
+!
+!
+!
+!
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key DMVPN-KEY address 0.0.0.0
+!
+!
+crypto ipsec transform-set TS-DMVPN esp-aes esp-sha-hmac
+ mode transport
+!
+crypto ipsec profile DMVPN-PROFILE
+ set transform-set TS-DMVPN
+!
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 10.255.0.2 255.255.255.255
+!
+interface Tunnel0
+ description DMVPN PRIMARY (to Manama HUB)
+ ip address 172.31.0.2 255.255.255.0
+ no ip redirects
+ ip mtu 1400
+ ip nhrp authentication DMVPN
+ ip nhrp map 172.31.0.1 10.255.0.1
+ ip nhrp map multicast 10.255.0.1
+ ip nhrp network-id 100
+ ip nhrp nhs 172.31.0.1
+ ip nhrp shortcut
+ ip tcp adjust-mss 1360
+ ip ospf network point-to-multipoint
+ ip ospf 10 area 0
+ ip ospf cost 10
+ tunnel source Loopback0
+ tunnel mode gre multipoint
+ tunnel key 100
+ tunnel protection ipsec profile DMVPN-PROFILE
+!
+interface Tunnel1
+ description DMVPN HUB  (Doha)
+ ip address 172.31.1.1 255.255.255.0
+ no ip redirects
+ ip mtu 1400
+ ip nhrp authentication DMVPN
+ ip nhrp map multicast dynamic
+ ip nhrp network-id 200
+ ip nhrp redirect
+ ip tcp adjust-mss 1360
+ ip ospf network broadcast
+ ip ospf 10 area 0
+ ip ospf cost 100
+ tunnel source Loopback0
+ tunnel mode gre multipoint
+ tunnel key 200
+!
+interface Ethernet0/0
+ no ip address
+ shutdown
+!
+interface Ethernet0/1
+ no ip address
+ shutdown
+!
+interface Ethernet0/2
+ no ip address
+!
+interface Ethernet0/2.50
+ encapsulation dot1Q 50
+ ip address 10.40.50.1 255.255.255.0
+ ip ospf 10 area 0
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+interface Serial1/0
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial1/1
+ description Doha <-> Manama
+ ip address 201.10.0.2 255.255.255.252
+ serial restart-delay 0
+!
+interface Serial1/2
+ description Doha <-> Riyadh
+ ip address 201.10.0.10 255.255.255.252
+ serial restart-delay 0
+!
+interface Serial1/3
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+router ospf 10
+ router-id 10.255.0.2
+ network 10.255.0.2 0.0.0.0 area 0
+ network 201.10.0.0 0.0.0.3 area 0
+ network 201.10.0.8 0.0.0.3 area 0
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+ --More--
+*Dec 25 20:10:40.201: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on Ethernet0/2 (not full duplex), with Switch Ethernet0/2 (full duplex).
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end

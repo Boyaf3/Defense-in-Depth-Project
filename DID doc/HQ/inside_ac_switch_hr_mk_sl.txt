@@ -1,0 +1,75 @@
+enable
+conf t
+hostname hr_markting_sales_Switch
+vlan 10
+name HQ_HR
+vlan 20
+name HQ_Markting
+vlan 30
+name HQ_Sales
+vlan 40
+name HQ_R&D
+vlan 50
+name HQ_Managment 
+
+int e0/2
+switchport mode access
+switchport access vlan 10
+no shut
+exit
+
+int e0/3
+switchport mode access
+switchport access vlan 20
+no shut
+exit
+
+int e0/0 
+switchport mode access
+switchport access vlan 30
+no shut
+exit
+
+int e0/1
+SWITCHPORT TRUNK ENCAPSULATION DOT1Q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50
+
+! Management SVI
+inter vlan 50
+ip add 10.10.50.5 255.255.255.0
+no shut
+exit
+
+
+! Default Gateway
+ip default-gateway 10.10.50.1
+
+arp access-list STATIC_PC   
+ permit ip host 10.10.10.11 mac host 50:00:00:0C:00:00
+ permit ip host 10.10.20.11 mac host 50:00:00:29:00:00 
+ permit ip host 10.10.30.11 mac host 50:00:00:09:00:00
+ permit ip host 10.10.30.11 mac host 50:00:00:0E:00:00
+ exit    
+
+ip dhcp snooping
+ip arp inspection filter STATIC_PC vlan 10,20,30
+ip arp inspection vlan 10,20,30,40,50
+spanning-tree portfast default
+spanning-tree loopguard default
+
+int range e0/0,e0/2-3
+ switchport mode access
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ switchport port-security
+ switchport port-security mac-address sticky
+ switchport port-security maximum 30
+ switchport port-security violation restrict
+ ip verify source port-security
+
+interface e0/1
+ ip arp inspection trust
+ spanning-tree portfast disable
+exit
+do wr

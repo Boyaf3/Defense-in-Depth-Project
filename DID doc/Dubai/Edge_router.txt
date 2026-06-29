@@ -1,0 +1,97 @@
+enable
+conf t
+hostname Dubai-RTR
+no ip domain-lookup
+ip cef
+
+crypto isakmp policy 10
+ encr aes
+ hash sha
+ authentication pre-share
+ group 2
+ lifetime 86400
+
+crypto isakmp key DMVPN-KEY address 0.0.0.0 0.0.0.0
+
+crypto ipsec transform-set TS-DMVPN esp-aes esp-sha-hmac
+ mode transport
+
+crypto ipsec profile DMVPN-PROFILE
+ set transform-set TS-DMVPN
+! ===== UNDERLAY WAN =====
+interface s1/0
+ description Dubai <-> Manama
+ ip address 201.10.0.6 255.255.255.252
+ no shutdown
+
+interface s1/3
+ description Dubai <-> Riyadh
+ ip address 201.10.0.14 255.255.255.252
+ no shutdown
+
+! LAN
+interface e0/2
+ no shutdown
+
+int e0/2.50
+ enc dot 50
+ ip address 10.20.50.1 255.255.255.0
+ ip ospf 10 area 0
+ no shut 
+
+
+! Loopback for DMVPN
+interface loopback0
+ ip address 10.255.0.4 255.255.255.255
+ no shutdown
+
+! ===== DMVPN CLOUD 1 – SPOKE to Manama =====
+interface Tunnel0
+ description DMVPN PRIMARY (to Manama HUB)
+ ip address 172.31.0.4 255.255.255.0
+ ip mtu 1400
+ ip tcp adjust-mss 1360
+ tunnel source loopback0                  ! 10.255.0.4
+ tunnel mode gre multipoint
+ tunnel key 100
+ ip nhrp network-id 100
+ ip nhrp authentication DMVPN
+ ip nhrp nhs 172.31.0.1
+ ip nhrp map 172.31.0.1 10.255.0.1
+ ip nhrp map multicast 10.255.0.1
+ ip nhrp shortcut
+ tunnel protection ipsec profile DMVPN-PROFILE
+ no shutdown
+ ip ospf 10 area 0
+ ip ospf network point-to-multipoint
+ ip ospf cost 10
+
+! ===== DMVPN CLOUD 2 – SPOKE to Doha =====
+interface Tunnel1
+ description DMVPN BACKUP (to Doha HUB)
+ ip address 172.31.1.4 255.255.255.0
+ ip mtu 1400
+ ip tcp adjust-mss 1360
+ tunnel source loopback0
+ tunnel mode gre multipoint
+ tunnel key 200
+ ip nhrp network-id 200
+ ip nhrp authentication DMVPN
+ ip nhrp nhs 172.31.1.1
+ ip nhrp map 172.31.1.1 10.255.0.2
+ ip nhrp map multicast 10.255.0.2
+ ip nhrp shortcut
+ tunnel protection ipsec profile DMVPN-PROFILE
+ no shutdown
+ ip ospf 10 area 0
+ ip ospf network point-to-multipoint
+ ip ospf cost 100
+
+! ===== OSPF =====
+router ospf 10
+ router-id 10.255.0.4
+ network 201.10.0.4 0.0.0.3 area 0       ! Dubai-Manama
+ network 201.10.0.12 0.0.0.3 area 0      ! Dubai-Riyadh
+ network 10.255.0.4 0.0.0.0 area 0
+end
+wr mem

@@ -1,0 +1,200 @@
+
+Building configuration...
+
+Current configuration : 2837 bytes
+!
+! Last configuration change at 17:38:56 UTC Thu Dec 25 2025
+!
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname MANAMA-RTR
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+bsd-client server url https://cloudsso.cisco.com/as/token.oauth2
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+cts logging verbose
+!
+!
+!
+redundancy
+!
+!
+!
+!
+!
+!
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key DMVPN-KEY address 0.0.0.0
+!
+!
+crypto ipsec transform-set TS-DMVPN esp-aes esp-sha-hmac
+ mode transport
+!
+crypto ipsec profile DMVPN-PROFILE
+ set transform-set TS-DMVPN
+!
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 10.255.0.1 255.255.255.255
+!
+interface Tunnel0
+ description DMVPN PRIMARY HUB (Manama)
+ ip address 172.31.0.1 255.255.255.0
+ no ip redirects
+ ip mtu 1400
+ ip nhrp authentication DMVPN
+ ip nhrp map multicast dynamic
+ ip nhrp network-id 100
+ ip nhrp redirect
+ ip tcp adjust-mss 1360
+ ip ospf network broadcast
+ ip ospf 10 area 0
+ ip ospf cost 10
+ tunnel source Loopback0
+ tunnel mode gre multipoint
+ tunnel key 100
+ tunnel protection ipsec profile DMVPN-PROFILE
+!
+interface Tunnel1
+ description DMVPN BACKUP (to Doha HUB)
+ ip address 172.31.1.2 255.255.255.0
+ no ip redirects
+ ip mtu 1400
+ ip nhrp authentication DMVPN
+ ip nhrp map 172.31.1.1 10.255.0.2
+ ip nhrp map multicast 10.255.0.2
+ ip nhrp network-id 200
+ ip nhrp nhs 172.31.1.1
+ ip nhrp shortcut
+ ip tcp adjust-mss 1360
+ ip ospf network point-to-multipoint
+ ip ospf 10 area 0
+ ip ospf cost 100
+ tunnel source Loopback0
+ tunnel mode gre multipoint
+ tunnel key 200
+!
+interface Ethernet0/0
+ ip address 209.10.0.1 255.255.255.248
+!
+interface Ethernet0/1
+ no ip address
+ shutdown
+!
+interface Ethernet0/2
+ no ip address
+ shutdown
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+interface Serial1/0
+ description Manama <-> Dubai
+ ip address 201.10.0.5 255.255.255.252
+ serial restart-delay 0
+!
+interface Serial1/1
+ description Manama <-> Doha
+ ip address 201.10.0.1 255.255.255.252
+ serial restart-delay 0
+!
+interface Serial1/2
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial1/3
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+router ospf 10
+ router-id 10.255.0.1
+ network 10.255.0.1 0.0.0.0 area 0
+ network 201.10.0.0 0.0.0.3 area 0
+ network 201.10.0.4 0.0.0.3 area 0
+ network 209.10.0.0 0.0.0.15 area 0
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+ip route 10.10.100.50 255.255.255.255 209.10.0.6
+!
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end

@@ -1,0 +1,215 @@
+
+Building configuration...
+
+Current configuration : 3679 bytes
+!
+! Last configuration change at 19:24:35 UTC Thu Dec 25 2025
+!
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+!
+hostname IPS
+!
+boot-start-marker
+boot-end-marker
+!
+!
+enable secret 5 $1$1ddn$n3xGp852wb1yR2sUDqHwv0
+!
+aaa new-model
+!
+!
+aaa authentication login default group radius local
+aaa authorization exec default group radius local
+aaa accounting exec default start-stop group radius
+!
+!
+!
+!
+!
+aaa session-id common
+!
+!
+!
+bsd-client server url https://cloudsso.cisco.com/as/token.oauth2
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+no ip domain lookup
+ip domain name gulftech.local
+ip ips name iosips
+!
+ip ips signature-category
+  category all
+   retired true
+  category ios_ips basic
+   retired false
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+cts logging verbose
+!
+!
+username admin privilege 15 secret 9 $9$2cDkC6.Yl4u7vn$7YP741gK6IUk4VXUbmDkdmyJhUktLxOHuvNxKpLYNdQ
+username intern view intern secret 5 $1$X7jo$o9kc65Im3yShX3KPM/coC1
+username auditor privilege 5 view auditor secret 5 $1$xqDJ$JQH.nTamflpuQa6UUqzMb1
+!
+redundancy
+!
+crypto key pubkey-chain rsa
+ named-key realm-cisco.pub signature
+  key-string
+   30820122 300D0609 2A864886 F70D0101 01050003 82010F00 3082010A 02820101
+   00C19E93 A8AF124A D6CC7A24 5097A975 206BE3A2 06FBA13F 6F12CB5B 4E441F16
+   17E630D5 C02AC252 912BE27F 37FDD9C8 11FC7AF7 DCDD81D9 43CDABC3 6007D128
+   B199ABCB D34ED0F9 085FADC1 359C189E F30AF10A C0EFB624 7E0764BF 3E53053E
+   5B2146A9 D7A5EDE3 0298AF03 DED7A5B8 9479039D 20F30663 9AC64B93 C0112A35
+   FE3F0C87 89BCB7BB 994AE74C FA9E481D F65875D6 85EAF974 6D9CC8E3 F0B08B85
+   50437722 FFBE85B9 5E4189FF CC189CB9 69C46F9C A84DFBA5 7A0AF99E AD768C36
+   006CF498 079F88F8 A3B3FB1F 9FB7B3CB 5539E1D1 9693CCBB 551F78D2 892356AE
+   2F56D826 8918EF3C 80CA4F4D 87BFCA3B BFF668E9 689782A5 CF31CB6E B4B094D3
+   F3020301 0001
+  quit
+!
+!
+ip ssh time-out 60
+ip ssh version 2
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ ip address 10.10.1.1 255.255.255.248
+ ip ips iosips in
+!
+interface Ethernet0/1
+ no ip address
+ shutdown
+!
+interface Ethernet0/2
+ no ip address
+ ip ips iosips in
+!
+interface Ethernet0/2.10
+ encapsulation dot1Q 10
+ ip address 10.10.10.1 255.255.255.0
+!
+interface Ethernet0/2.20
+ encapsulation dot1Q 20
+ ip address 10.10.20.1 255.255.255.0
+!
+interface Ethernet0/2.30
+ encapsulation dot1Q 30
+ ip address 10.10.30.1 255.255.255.0
+!
+interface Ethernet0/2.40
+ encapsulation dot1Q 40
+ ip address 10.10.40.1 255.255.255.0
+ ip access-group RND_PROTECTION in
+!
+interface Ethernet0/2.50
+ encapsulation dot1Q 50
+ ip address 10.10.50.1 255.255.255.0
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+ip forward-protocol nd
+!
+!
+ip http server
+no ip http secure-server
+ip route 0.0.0.0 0.0.0.0 10.10.1.2
+ip route 10.10.100.0 255.255.255.0 10.10.1.2
+!
+ip access-list extended RND_PROTECTION
+ permit ip 10.10.50.0 0.0.0.255 10.10.40.0 0.0.0.255
+ deny   ip any 10.10.40.0 0.0.0.255
+!
+logging host 10.10.50.11
+logging host 10.10.50.13
+!
+!
+!
+!
+radius server AAA-SERVER
+ address ipv4 10.10.50.20 auth-port 1812 acct-port 1813
+ key 7 00331A08365A0F0F1A32
+ --More--
+*Dec 25 19:53:52.599: %RADIUS-4-RADIUS_DEAD: RADIUS server 10.10.50.20:1812,1813 is not responding.
+*Dec 25 19:53:52.599: %RADIUS-4-RADIUS_ALIVE: RADIUS server 10.10.50.20:1812,1813 is being marked alive.
+!
+!
+control-plane
+!
+!
+!
+!
+ --More--
+*Dec 25 19:53:54.229: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on Ethernet0/2 (not full duplex), with Dis_Switch.gulftech.local Ethernet0/3 (full duplex).
+!
+!
+!
+parser view auditor
+ secret 5 $1$M2J6$YwyhsNmRWNqM1X2qBiQYx1
+ commands exec include show access-lists
+ commands exec include show ip route
+ commands exec include show ip
+ commands exec include show logging
+ commands exec include show
+!
+parser view intern
+ secret 5 $1$3bC1$v3sszeWVp4344YrE4UEx90
+ commands exec include show
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ exec-timeout 5 0
+ transport input ssh
+!
+!
+end

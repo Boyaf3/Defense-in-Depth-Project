@@ -1,0 +1,53 @@
+ena 
+conf t
+hostname ASA2-System
+wr me 
+mode multiple 
+//////////////////////////////////////////
+ena 
+changeto system 
+conf t
+no failover
+failover lan unit secondary
+failover lan interface FO Ethernet3
+failover interface ip FO 10.10.2.1 255.255.255.252 standby 10.10.2.2
+
+failover group 1
+ secondary
+ preempt
+
+failover group 2
+ primary
+ preempt
+
+interface Ethernet0
+ no shutdown
+interface Ethernet1
+ no shutdown
+interface Ethernet2
+ no shutdown
+interface Ethernet3
+ no shutdown
+exit
+
+interface Ethernet4
+no shutdown
+exit
+
+admin-context CTX-MAIN
+
+context CTX-MAIN
+  join-failover-group 1
+  allocate-interface Ethernet0
+  allocate-interface Ethernet1
+  allocate-interface Ethernet2
+  config-url disk0:/CTX-MAIN.cfg
+
+context CTX-EXTRA
+  join-failover-group 2
+  allocate-interface Ethernet4
+  config-url disk0:/CTX-EXTRA.cfg
+
+failover
+end
+wr mem
